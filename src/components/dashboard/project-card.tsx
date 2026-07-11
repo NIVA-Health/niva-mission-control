@@ -9,7 +9,9 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { PriorityBadge } from "@/components/ui/priority-badge";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { OwnerAvatars } from "@/components/ui/owner-avatars";
-import { formatDate, relativeTime, stripMarkdown } from "@/lib/utils";
+import { PipelineStepper } from "@/components/ui/pipeline-stepper";
+import { isPastDue as computeIsPastDue } from "@/lib/business/portfolio";
+import { cn, dueLabel, formatDate, relativeTime, stripMarkdown } from "@/lib/utils";
 
 export function ProjectCard({
   project,
@@ -20,6 +22,14 @@ export function ProjectCard({
   index?: number;
   onHide?: (id: string) => void;
 }) {
+  const pastDue = computeIsPastDue(project);
+  const due = dueLabel(project.targetCompletion);
+  const dueTone = pastDue
+    ? "text-status-orange"
+    : due.startsWith("Due in") && Number(due.replace(/\D+/g, "")) <= 7
+      ? "text-status-gold"
+      : "text-muted-foreground";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 6 }}
@@ -46,9 +56,7 @@ export function ProjectCard({
           <CardHeader>
             <div className="flex items-start justify-between gap-2">
               <h3 className="text-sm font-semibold leading-snug text-foreground">{project.name}</h3>
-              <span className="shrink-0 rounded-md bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                {project.phase}
-              </span>
+              <PriorityBadge priority={project.priority} />
             </div>
             {project.description ? (
               <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
@@ -58,29 +66,34 @@ export function ProjectCard({
           </CardHeader>
 
           <CardContent className="mt-auto space-y-4">
-            <div>
-              <div className="mb-1.5 flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Progress</span>
-                <span className="font-medium tabular-nums text-foreground">{project.progress}%</span>
-              </div>
-              <ProgressBar value={project.progress} />
-            </div>
+            {/* Pipeline position — the primary "where are we" signal for ELT. */}
+            <PipelineStepper phase={project.phase} status={project.status} isPastDue={pastDue} />
 
-            <OwnerAvatars owners={project.owners} />
+            {/* Timeline: target date is the headline; progress % is supporting detail. */}
+            <div className="flex items-center justify-between gap-3 rounded-md border border-border bg-elevated/50 px-3 py-2">
+              <div className="flex items-center gap-1.5">
+                <CalendarClock className={cn("h-3.5 w-3.5", dueTone)} />
+                <div className="leading-tight">
+                  <div className={cn("text-xs font-semibold", dueTone)}>{due}</div>
+                  <div className="text-[10px] text-muted-foreground">Target {formatDate(project.targetCompletion)}</div>
+                </div>
+              </div>
+              <div className="text-right leading-tight">
+                <div className="text-xs font-medium tabular-nums text-foreground">{project.progress}%</div>
+                <div className="text-[10px] text-muted-foreground">complete</div>
+              </div>
+            </div>
+            <ProgressBar value={project.progress} />
 
             <div className="flex items-center justify-between">
+              <OwnerAvatars owners={project.owners} />
               <StatusBadge status={project.status} />
-              <PriorityBadge priority={project.priority} />
             </div>
 
             <div className="flex items-center justify-between border-t border-border pt-3 text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1">
-                <CalendarClock className="h-3 w-3" />
-                {formatDate(project.targetCompletion)}
-              </span>
-              <span className="flex items-center gap-1">
                 <History className="h-3 w-3" />
-                {relativeTime(project.lastUpdated)}
+                Updated {relativeTime(project.lastUpdated)}
               </span>
             </div>
           </CardContent>

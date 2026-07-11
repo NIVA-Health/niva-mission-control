@@ -90,8 +90,10 @@ Next Milestone:
 ## Executive logic
 
 - **On track**: active, not blocked, not past due.
-- **Requires attention** (always surfaced first): Blocked, Urgent, Past Due, or
-  Pending with no activity for 14+ days — ranked by severity.
+- **Requires attention**: Blocked, Urgent, Past Due, or Pending with no activity
+  for 14+ days — ranked by severity. Surfaced as a supporting section below the
+  Active Portfolio grid, which is the primary view (pipeline stage + timeline
+  per project is the main thing ELT scans).
 
 ## Scripts
 

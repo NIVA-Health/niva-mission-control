@@ -16,8 +16,8 @@ export function ExecutiveAttentionPanel({ projects }: { projects: Project[] }) {
   return (
     <section aria-label="Executive attention" className="space-y-3">
       <div className="flex items-center gap-2">
-        <AlertTriangle className="h-4 w-4 text-status-orange" />
-        <h2 className="text-sm font-semibold tracking-tight text-foreground">Requires Executive Attention</h2>
+        <AlertTriangle className="h-3.5 w-3.5 text-status-orange" />
+        <h2 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Requires Executive Attention</h2>
         <span className="rounded-full bg-status-orange/10 px-2 py-0.5 text-xs font-medium text-status-orange">
           {items.length}
         </span>

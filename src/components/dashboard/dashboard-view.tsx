@@ -83,12 +83,10 @@ export function DashboardView() {
         onSelect={(key) => setPortfolioKey((prev) => (prev === key ? null : key))}
       />
 
-      <ExecutiveAttentionPanel projects={projects} />
-
       <section className="space-y-4">
         <div className="flex items-center gap-2">
           <LayoutGrid className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold tracking-tight text-foreground">Active Portfolio</h2>
+          <h2 className="text-base font-bold tracking-tight text-foreground">Active Portfolio</h2>
           <span className="text-xs text-muted-foreground">
             {shown.length} of {projects.length}
           </span>
@@ -144,6 +142,8 @@ export function DashboardView() {
         <FilterPanel filters={filters} owners={owners} onChange={setFilters} onClear={() => setFilters(EMPTY_FILTERS)} />
         <ProjectGrid projects={shown} onHide={hideCard} />
       </section>
+
+      <ExecutiveAttentionPanel projects={projects} />
     </div>
   );
 }

@@ -31,6 +31,17 @@ function rtf(value: number, unit: Intl.RelativeTimeFormatUnit): string {
   return new Intl.RelativeTimeFormat(undefined, { numeric: "auto" }).format(-value, unit);
 }
 
+/** Human label for a target completion date relative to now, e.g. "Due in 5 days" / "3 days overdue". */
+export function dueLabel(iso: string | null): string {
+  if (!iso) return "No target date";
+  const target = new Date(iso).getTime();
+  if (Number.isNaN(target)) return "No target date";
+  const days = Math.round((target - Date.now()) / (24 * 60 * 60 * 1000));
+  if (days === 0) return "Due today";
+  if (days > 0) return `Due in ${days} day${days === 1 ? "" : "s"}`;
+  return `${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} overdue`;
+}
+
 /** Strip common Markdown tokens for compact previews (card summaries). */
 export function stripMarkdown(md: string): string {
   return md
