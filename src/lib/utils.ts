@@ -42,6 +42,19 @@ export function dueLabel(iso: string | null): string {
   return `${Math.abs(days)} day${Math.abs(days) === 1 ? "" : "s"} overdue`;
 }
 
+/** Triggers a browser download of the given text as a file. Client-side (presentation-layer) only. */
+export function downloadTextFile(filename: string, content: string, mime = "text/markdown") {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 /** Strip common Markdown tokens for compact previews (card summaries). */
 export function stripMarkdown(md: string): string {
   return md

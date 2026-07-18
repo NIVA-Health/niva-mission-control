@@ -1,11 +1,11 @@
 "use client";
 
-import { Activity, CheckCircle2, Clock, Ban, TrendingUp } from "lucide-react";
+import { Activity, CheckCircle2, Circle, Ban, TrendingUp } from "lucide-react";
 import type { Project } from "@/domain/project";
 import { computePortfolioSummary } from "@/lib/business/portfolio";
 import { MetricCard } from "./metric-card";
 
-export type PortfolioFilterKey = "active" | "onTrack" | "pending" | "blocked" | "completed";
+export type PortfolioFilterKey = "active" | "onTrack" | "notStarted" | "blocked" | "completed";
 
 export function PortfolioSummary({
   projects,
@@ -20,7 +20,7 @@ export function PortfolioSummary({
   const cards = [
     { key: "active" as const, label: "Active Projects", value: s.activeProjects, icon: Activity, tone: "blue" as const },
     { key: "onTrack" as const, label: "On Track", value: s.onTrack, icon: TrendingUp, tone: "green" as const },
-    { key: "pending" as const, label: "Pending", value: s.pending, icon: Clock, tone: "gold" as const },
+    { key: "notStarted" as const, label: "Not Started", value: s.notStarted, icon: Circle, tone: "gray" as const },
     { key: "blocked" as const, label: "Blocked", value: s.blocked, icon: Ban, tone: "orange" as const },
     { key: "completed" as const, label: "Completed This Week", value: s.completedThisWeek, icon: CheckCircle2, tone: "green" as const },
   ];

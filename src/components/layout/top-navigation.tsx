@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Radar, Settings } from "lucide-react";
+import { Radar } from "lucide-react";
 import { useEffect, useState } from "react";
 import { SearchBar } from "@/components/ui/search-bar";
-import { cn } from "@/lib/utils";
 
 export function TopNavigation() {
   const router = useRouter();
@@ -38,7 +37,7 @@ export function TopNavigation() {
   });
 
   return (
-    <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 print:hidden">
       <div className="mx-auto flex h-14 max-w-[1400px] items-center gap-4 px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2 shrink-0">
           <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary/15 text-primary">
@@ -55,20 +54,6 @@ export function TopNavigation() {
 
         <div className="flex items-center gap-3 shrink-0">
           <span className="hidden text-xs text-muted-foreground md:inline">{today}</span>
-          <button
-            aria-label="Settings"
-            className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
-            )}
-          >
-            <Settings className="h-4 w-4" />
-          </button>
-          <span
-            title="Dr. Amara Foss"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-elevated text-xs font-semibold text-foreground"
-          >
-            AF
-          </span>
         </div>
       </div>
     </header>

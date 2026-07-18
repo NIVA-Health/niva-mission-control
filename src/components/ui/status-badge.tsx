@@ -1,10 +1,11 @@
-import { CheckCircle2, Clock, Ban } from "lucide-react";
+import { CheckCircle2, Activity, Circle, Ban } from "lucide-react";
 import { Badge } from "./badge";
 import type { ProjectStatus } from "@/domain/project";
 
 const MAP = {
   Completed: { tone: "green", Icon: CheckCircle2 },
-  Pending: { tone: "gold", Icon: Clock },
+  Active: { tone: "blue", Icon: Activity },
+  "Not Started": { tone: "gray", Icon: Circle },
   Blocked: { tone: "orange", Icon: Ban },
 } as const;
 

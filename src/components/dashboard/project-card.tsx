@@ -46,7 +46,7 @@ export function ProjectCard({
           }}
           title="Hide from view"
           aria-label="Hide from view"
-          className="absolute right-2 top-2 z-10 rounded-md border border-border bg-elevated p-1 text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+          className="absolute right-2 top-2 z-10 rounded-md border border-border bg-elevated/90 p-1 text-muted-foreground opacity-60 transition-opacity hover:text-foreground hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring group-hover:opacity-100 print:hidden"
         >
           <EyeOff className="h-3.5 w-3.5" />
         </button>

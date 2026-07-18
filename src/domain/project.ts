@@ -9,7 +9,7 @@ import { z } from "zod";
  * same shapes; the UI never changes.
  */
 
-export const STATUS = ["Completed", "Pending", "Blocked"] as const;
+export const STATUS = ["Not Started", "Active", "Blocked", "Completed"] as const;
 export const PRIORITY = ["Urgent", "High", "Normal", "Low"] as const;
 export const PHASE = [
   "Planned",
@@ -62,23 +62,10 @@ export const ProjectsSchema = z.array(ProjectSchema);
 
 /* ---- Derived executive views (produced by the business layer) ---- */
 
-export const AttentionReasonSchema = z.enum([
-  "Blocked",
-  "Urgent",
-  "Past Due",
-  "Stale Pending",
-]);
-export type AttentionReason = z.infer<typeof AttentionReasonSchema>;
-
-export interface AttentionItem {
-  project: Project;
-  reasons: AttentionReason[];
-}
-
 export interface PortfolioSummary {
   activeProjects: number;
   onTrack: number;
-  pending: number;
+  notStarted: number;
   blocked: number;
   completedThisWeek: number;
 }

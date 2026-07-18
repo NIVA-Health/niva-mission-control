@@ -53,13 +53,16 @@ export function mapStatus(labels: TrelloLabel[], phase: ProjectPhase): ProjectSt
   // Blocked always surfaces — even over list position.
   if (names.some((n) => n.includes("blocked"))) return "Blocked";
   // List position is authoritative for completion: a card in a "Done" list is
-  // Completed even if it still carries a stale PENDING label. This keeps finished
-  // work out of the Executive Attention panel and the active-project counts.
+  // Completed even if it still carries a stale label. This keeps finished
+  // work out of the active-project counts.
   if (phase === "Completed") return "Completed";
   // Explicit DONE label completes a card that has not reached a Done list yet.
   if (names.some((n) => n.includes("done") || n.includes("complete"))) return "Completed";
-  // Everything else on the board is active work still awaiting completion.
-  return "Pending";
+  // No board convention reliably marks "pending" as a real per-card label, so
+  // don't invent one — derive it from where the card actually sits in the
+  // pipeline instead. Still in the backlog list means work hasn't begun;
+  // anywhere past that means it's active.
+  return phase === "Planned" ? "Not Started" : "Active";
 }
 
 export function mapPriority(labels: TrelloLabel[]): ProjectPriority {

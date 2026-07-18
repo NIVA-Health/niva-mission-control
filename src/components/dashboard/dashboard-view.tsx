@@ -6,7 +6,8 @@ import { LayoutGrid, Eye, EyeOff } from "lucide-react";
 import { useProjects } from "@/lib/hooks/use-projects";
 import { filterProjects } from "@/lib/business/filter";
 import { PortfolioSummary, type PortfolioFilterKey } from "./portfolio-summary";
-import { ExecutiveAttentionPanel } from "./executive-attention-panel";
+import { UpcomingDueDates } from "./upcoming-due-dates";
+import { ReportActions } from "./report-actions";
 import { ProjectGrid } from "./project-grid";
 import { FilterPanel, EMPTY_FILTERS, type Filters } from "./filter-panel";
 import { DashboardSkeleton } from "@/components/ui/loading-skeleton";
@@ -77,6 +78,10 @@ export function DashboardView() {
 
   return (
     <div className="space-y-10 animate-fade-in">
+      <div className="flex justify-end">
+        <ReportActions projects={projects} />
+      </div>
+
       <PortfolioSummary
         projects={projects}
         activeKey={portfolioKey}
@@ -90,7 +95,7 @@ export function DashboardView() {
           <span className="text-xs text-muted-foreground">
             {shown.length} of {projects.length}
           </span>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex items-center gap-2 print:hidden">
             {hiddenList.length > 0 ? (
               <button
                 onClick={() => setShowHiddenPanel((v) => !v)}
@@ -111,7 +116,7 @@ export function DashboardView() {
         </div>
 
         {showHiddenPanel && hiddenList.length > 0 ? (
-          <div className="space-y-2 rounded-lg border border-border bg-card/40 p-4">
+          <div className="space-y-2 rounded-lg border border-border bg-card/40 p-4 print:hidden">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
                 Hidden from view ({hiddenList.length})
@@ -139,11 +144,13 @@ export function DashboardView() {
           </div>
         ) : null}
 
-        <FilterPanel filters={filters} owners={owners} onChange={setFilters} onClear={() => setFilters(EMPTY_FILTERS)} />
+        <div className="print:hidden">
+          <FilterPanel filters={filters} owners={owners} onChange={setFilters} onClear={() => setFilters(EMPTY_FILTERS)} />
+        </div>
         <ProjectGrid projects={shown} onHide={hideCard} />
       </section>
 
-      <ExecutiveAttentionPanel projects={projects} />
+      <UpcomingDueDates projects={projects} />
     </div>
   );
 }

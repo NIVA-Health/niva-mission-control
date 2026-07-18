@@ -5,8 +5,8 @@ not a project manager. Project management stays in Trello; Mission Control gives
 leadership a real-time operational snapshot so they never need to open Trello.
 
 > Goal: an executive understands organizational health in **under 60 seconds** —
-> what's active, what's blocked, what needs attention, who owns it, and where every
-> initiative sits in its lifecycle.
+> what's active, what's blocked, who owns it, and where every initiative sits
+> in its pipeline and timeline.
 
 ## Tech stack
 
@@ -18,7 +18,7 @@ shadcn/ui-style primitives · Lucide icons · Framer Motion (subtle) · TanStack
 ```
 Presentation (components/, app/)
       ↓ depends on
-Business logic (lib/business/)        ← portfolio + executive-attention rules
+Business logic (lib/business/)        ← portfolio, timeline, and status rules
       ↓ depends on
 Repository interface (repository/)    ← ProjectRepository
       ↓ implemented by
@@ -73,8 +73,16 @@ TRELLO_BOARD_ID=...     # id (or short link) from the board URL
 | Due date | Target completion |
 | Last activity | Last updated |
 | List (Backlog/Design/To Do/Doing/Review/Testing/Done) | Phase (Planned → Completed) |
-| Label DONE/PENDING/BLOCKED | Status |
+| Label Blocked / Done (or list = Done) / *derived from phase* | Status |
 | Label Urgent/High/Normal/Low | Priority |
+
+**Status derivation** — there's no reliable "in progress" label convention on the
+board, so Status isn't read from a label the way Priority is. It's computed:
+Blocked always wins if that label is present; a card in the Done list (or
+carrying a Done/Complete label) is Completed; otherwise Status follows Phase —
+`Not Started` while a card sits in Planned/Backlog, `Active` for everything
+past that. This means Status only ever needs Blocked and Done/Complete labels
+on the board — nothing needs to be added for the Not Started/Active split.
 
 **Description template** — headings parsed into their own sections:
 
@@ -90,10 +98,11 @@ Next Milestone:
 ## Executive logic
 
 - **On track**: active, not blocked, not past due.
-- **Requires attention**: Blocked, Urgent, Past Due, or Pending with no activity
-  for 14+ days — ranked by severity. Surfaced as a supporting section below the
-  Active Portfolio grid, which is the primary view (pipeline stage + timeline
-  per project is the main thing ELT scans).
+- Mission Control is deliberately a **progress and timeline** view, not a
+  triage tool — there's no separate "needs attention" list. Blocked/Urgent
+  status is still visible per-project via badges on the Active Portfolio grid
+  (the primary view), and Upcoming Due Dates surfaces what's coming next
+  portfolio-wide.
 
 ## Scripts
 

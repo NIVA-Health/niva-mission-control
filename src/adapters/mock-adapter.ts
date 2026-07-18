@@ -33,7 +33,7 @@ const RAW: Project[] = [
   {
     id: "niva-02",
     name: "Provider Scheduling Optimization",
-    status: "Pending",
+    status: "Active",
     priority: "High",
     phase: "Leadership Review",
     progress: 88,
@@ -46,7 +46,7 @@ const RAW: Project[] = [
   {
     id: "niva-03",
     name: "Telehealth Reimbursement Engine",
-    status: "Pending",
+    status: "Active",
     priority: "Normal",
     phase: "Ready",
     progress: 20,
@@ -59,7 +59,7 @@ const RAW: Project[] = [
   {
     id: "niva-04",
     name: "Clinical Data Warehouse (BigQuery)",
-    status: "Pending",
+    status: "Active",
     priority: "High",
     phase: "In Design",
     progress: 35,
@@ -96,6 +96,19 @@ const RAW: Project[] = [
     description:
       "Mobile app enabling care teams to coordinate across settings in real time. Push-notification reliability is failing acceptance criteria.",
     recentActivity: [{ id: "a7", text: "Progress checklist updated", at: daysFromNow(-6) }],
+  },
+  {
+    id: "niva-07",
+    name: "Referral Network Analytics",
+    status: "Not Started",
+    priority: "Normal",
+    phase: "Planned",
+    progress: 0,
+    owners: [],
+    targetCompletion: null,
+    lastUpdated: daysFromNow(-15),
+    description: "Backlog item — analytics on referral leakage across the network. Not yet scoped.",
+    recentActivity: [{ id: "a8", text: "Initiative created", at: daysFromNow(-15) }],
   },
 ];
 

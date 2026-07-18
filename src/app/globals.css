@@ -39,6 +39,16 @@
   ::selection { @apply bg-primary/30; }
 }
 
+/* Snapshot export ("Export snapshot" -> window.print() / Save as PDF): keep the
+   dark executive theme intact and hide chrome that's only useful in-app. */
+@media print {
+  html, body { background: hsl(var(--background)) !important; }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
 @layer utilities {
   .shimmer {
     position: relative;

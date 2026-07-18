@@ -43,8 +43,8 @@ function matchesPortfolioKey(p: Project, key: PortfolioFilterKey | null): boolea
       return isActive(p);
     case "onTrack":
       return isOnTrack(p);
-    case "pending":
-      return p.status === "Pending";
+    case "notStarted":
+      return p.status === "Not Started";
     case "blocked":
       return p.status === "Blocked";
     case "completed":

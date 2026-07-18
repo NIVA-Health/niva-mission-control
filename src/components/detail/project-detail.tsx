@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CalendarClock, History } from "lucide-react";
 import type { ReactNode } from "react";
@@ -9,7 +10,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { PriorityBadge } from "@/components/ui/priority-badge";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { OwnerAvatars } from "@/components/ui/owner-avatars";
-import { formatDate, relativeTime } from "@/lib/utils";
+import { cn, formatDate, relativeTime, stripMarkdown } from "@/lib/utils";
 import { Markdown } from "@/components/ui/markdown";
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
@@ -18,6 +19,34 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <div className="text-sm text-foreground">{children}</div>
     </div>
+  );
+}
+
+/**
+ * A single Recent Activity entry. Trello comments can carry raw Markdown and
+ * run arbitrarily long — strip the syntax so it reads as plain text (matching
+ * the Description panel), and clamp very long entries so one comment can't
+ * push the rest of the feed out of view.
+ */
+function ActivityEntry({ text, at }: { text: string; at: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const clean = stripMarkdown(text);
+  const isLong = clean.length > 220;
+
+  return (
+    <li className="relative border-l border-border pl-4">
+      <span className="absolute -left-[3px] top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
+      <p className={cn("text-sm text-foreground/90", !expanded && isLong && "line-clamp-4")}>{clean}</p>
+      {isLong ? (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-1 text-[11px] font-medium text-primary transition-colors hover:underline"
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      ) : null}
+      <p className="text-[11px] text-muted-foreground">{relativeTime(at)}</p>
+    </li>
   );
 }
 
@@ -94,11 +123,7 @@ export function ProjectDetail({ project }: { project: Project }) {
               ) : (
                 <ol className="space-y-4">
                   {project.recentActivity.map((a) => (
-                    <li key={a.id} className="relative border-l border-border pl-4">
-                      <span className="absolute -left-[3px] top-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
-                      <p className="text-sm text-foreground/90">{a.text}</p>
-                      <p className="text-[11px] text-muted-foreground">{relativeTime(a.at)}</p>
-                    </li>
+                    <ActivityEntry key={a.id} text={a.text} at={a.at} />
                   ))}
                 </ol>
               )}
