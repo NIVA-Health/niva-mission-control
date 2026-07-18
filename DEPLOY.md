@@ -166,6 +166,52 @@ each deploy **preserves** the configuration set in step 5. Change config with a
 
 ---
 
+## 8. Firestore for shared card hiding
+
+Mission Control lets designated admins hide non-initiative cards (placeholders,
+templates, Trello's own helper cards) for **every** viewer. That shared list
+lives in Firestore. Hiding never modifies Trello — it is a view preference only.
+
+Enable Firestore and create the database (Native mode):
+
+```powershell
+gcloud services enable firestore.googleapis.com
+
+gcloud firestore databases create --location=nam5
+```
+
+Let the app's runtime identity read and write it:
+
+```powershell
+gcloud projects add-iam-policy-binding $PROJECT_ID `
+  --member="serviceAccount:$RUN_SA" `
+  --role="roles/datastore.user"
+```
+
+Set who may curate the board. This **fails closed** — with no value set,
+nobody can hide anything, including you:
+
+```powershell
+gcloud run services update $SERVICE --region $REGION `
+  --update-env-vars "ADMIN_EMAILS=josh@nivahealth.com"
+```
+
+Add Lynn (or anyone else) by re-running with a comma-separated list:
+
+```powershell
+gcloud run services update $SERVICE --region $REGION `
+  --update-env-vars "ADMIN_EMAILS=josh@nivahealth.com,ltchabvonga@nivahealth.com"
+```
+
+Identity comes from the IAP header `x-goog-authenticated-user-email`, so this
+only works once IAP (step 6) is enabled. Non-admins still see the curated
+board and the "Hidden" list — they simply cannot change it.
+
+Data written per hidden card: card id, card name, who hid it, and when — so
+the panel doubles as an audit trail.
+
+---
+
 ## Operations
 
 **Logs**
