@@ -121,3 +121,5 @@ scopes are needed — a read-only Trello token is sufficient.
 
 Kanban, editing, drag-and-drop, comments, project creation, admin screens.
 Mission Control is a read-only executive command center.
+
+<!-- CI: Cloud Build trigger verified -->
