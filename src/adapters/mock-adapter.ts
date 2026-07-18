@@ -1,6 +1,7 @@
-import type { Project } from "@/domain/project";
+import type { ProgramView, Project } from "@/domain/project";
 import { ProjectsSchema } from "@/domain/project";
 import type { ProjectRepository } from "@/repository/project-repository";
+import { buildProgramView } from "@/lib/business/programs";
 
 /**
  * Deterministic sample data so the full UI is viewable with no credentials.
@@ -22,6 +23,9 @@ const RAW: Project[] = [
     progress: 62,
     checklistDone: 0,
     checklistTotal: 0,
+    source: "delivery",
+    programName: null,
+    children: [],
     owners: [{ id: "u1", name: "Dr. Amara Foss", initials: "AF", avatarUrl: null }],
     targetCompletion: daysFromNow(12),
     lastUpdated: daysFromNow(-1),
@@ -41,6 +45,9 @@ const RAW: Project[] = [
     progress: 88,
     checklistDone: 7,
     checklistTotal: 8,
+    source: "delivery",
+    programName: null,
+    children: [],
     owners: [{ id: "u2", name: "Marcus Lee", initials: "ML", avatarUrl: null }],
     targetCompletion: daysFromNow(6),
     lastUpdated: daysFromNow(-3),
@@ -56,6 +63,9 @@ const RAW: Project[] = [
     progress: 20,
     checklistDone: 0,
     checklistTotal: 0,
+    source: "delivery",
+    programName: null,
+    children: [],
     owners: [{ id: "u3", name: "Priya Nair", initials: "PN", avatarUrl: null }],
     targetCompletion: daysFromNow(40),
     lastUpdated: daysFromNow(-20),
@@ -71,6 +81,9 @@ const RAW: Project[] = [
     progress: 35,
     checklistDone: 0,
     checklistTotal: 0,
+    source: "delivery",
+    programName: null,
+    children: [],
     owners: [{ id: "u4", name: "Sofia Alvarez", initials: "SA", avatarUrl: null }],
     targetCompletion: daysFromNow(-2),
     lastUpdated: daysFromNow(-4),
@@ -87,6 +100,9 @@ const RAW: Project[] = [
     progress: 100,
     checklistDone: 0,
     checklistTotal: 0,
+    source: "delivery",
+    programName: null,
+    children: [],
     owners: [{ id: "u5", name: "Grace Kim", initials: "GK", avatarUrl: null }],
     targetCompletion: daysFromNow(-3),
     lastUpdated: daysFromNow(-2),
@@ -102,6 +118,9 @@ const RAW: Project[] = [
     progress: 74,
     checklistDone: 0,
     checklistTotal: 0,
+    source: "delivery",
+    programName: null,
+    children: [],
     owners: [{ id: "u6", name: "Daniel Osei", initials: "DO", avatarUrl: null }],
     targetCompletion: daysFromNow(18),
     lastUpdated: daysFromNow(-6),
@@ -118,6 +137,9 @@ const RAW: Project[] = [
     progress: 0,
     checklistDone: 0,
     checklistTotal: 0,
+    source: "delivery",
+    programName: null,
+    children: [],
     owners: [],
     targetCompletion: null,
     lastUpdated: daysFromNow(-15),
@@ -132,5 +154,9 @@ export class MockAdapter implements ProjectRepository {
   }
   async getProjectById(id: string): Promise<Project | null> {
     return RAW.find((p) => p.id === id) ?? null;
+  }
+  async getPrograms(): Promise<ProgramView> {
+    // No programme board in mock mode; everything is standalone delivery work.
+    return buildProgramView([], RAW);
   }
 }

@@ -9,6 +9,8 @@ import { filterProjects } from "@/lib/business/filter";
 import { PortfolioSummary, type PortfolioFilterKey } from "./portfolio-summary";
 import { UpcomingDueDates } from "./upcoming-due-dates";
 import { ReportActions } from "./report-actions";
+import { ProgramsView } from "./programs-view";
+import { ViewSwitcher, type DashboardViewMode } from "./view-switcher";
 import { ProjectGrid } from "./project-grid";
 import { FilterPanel, EMPTY_FILTERS, type Filters } from "./filter-panel";
 import { DashboardSkeleton } from "@/components/ui/loading-skeleton";
@@ -19,6 +21,7 @@ export function DashboardView() {
   const { data: projects, isLoading, isError, error, refetch } = useProjects();
   const params = useSearchParams();
   const query = params.get("q") ?? "";
+
 
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [portfolioKey, setPortfolioKey] = useState<PortfolioFilterKey | null>(null);
@@ -32,6 +35,14 @@ export function DashboardView() {
   const hideMutation = useHideCard();
   const restoreMutation = useRestoreCard();
   const canCurate = viewer?.isAdmin ?? false;
+
+  // ?view= wins; otherwise fall back to the server-configured default so the
+  // landing view can be switched without a rebuild.
+  const requestedView = params.get("view");
+  const view: DashboardViewMode =
+    requestedView === "programs" || requestedView === "delivery"
+      ? requestedView
+      : (viewer?.defaultView ?? "delivery");
 
   const hidden = useMemo(() => hiddenEntries ?? [], [hiddenEntries]);
   const hiddenIds = useMemo(() => new Set(hidden.map((h) => h.id)), [hidden]);
@@ -49,6 +60,17 @@ export function DashboardView() {
   const shown = useMemo(() => visible.filter((p) => !hiddenIds.has(p.id)), [visible, hiddenIds]);
 
 
+  if (view === "programs") {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-3">
+          <ViewSwitcher view={view} />
+        </div>
+        <ProgramsView />
+      </div>
+    );
+  }
+
   if (isLoading) return <DashboardSkeleton />;
   if (isError) return <ErrorState message={(error as Error)?.message ?? "Unknown error"} onRetry={() => refetch()} />;
   if (!projects || projects.length === 0)
@@ -56,7 +78,8 @@ export function DashboardView() {
 
   return (
     <div className="space-y-10 animate-fade-in">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3">
+        <ViewSwitcher view={view} />
         <ReportActions projects={projects} />
       </div>
 

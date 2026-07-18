@@ -81,11 +81,15 @@ export function ProjectCard({
               <div className="text-right leading-tight">
                 <div className="text-xs font-medium tabular-nums text-foreground">{project.progress}%</div>
                 <div className="text-[10px] text-muted-foreground">
-                  {progressLabel(project.checklistDone, project.checklistTotal)}
+                  {progressLabel(
+                    project.checklistDone,
+                    project.checklistTotal,
+                    project.children.length > 0 ? "projects" : "tasks",
+                  )}
                 </div>
               </div>
             </div>
-            <ProgressBar value={project.progress} inferred={project.checklistTotal === 0} />
+            <ProgressBar value={project.progress} inferred={project.checklistTotal === 0 && project.children.length === 0} />
 
             <div className="flex items-center justify-between">
               <OwnerAvatars owners={project.owners} />

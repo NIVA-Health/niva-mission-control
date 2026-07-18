@@ -38,6 +38,21 @@ export const OwnerSchema = z.object({
 });
 export type Owner = z.infer<typeof OwnerSchema>;
 
+/** Which Trello board a card came from. */
+export const SOURCE = ["program", "delivery"] as const;
+export const ProjectSourceSchema = z.enum(SOURCE);
+export type ProjectSource = z.infer<typeof ProjectSourceSchema>;
+
+/** A delivery card rolled up beneath a programme card. */
+export const ProjectChildSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  phase: ProjectPhaseSchema,
+  status: ProjectStatusSchema,
+  owners: z.array(OwnerSchema),
+});
+export type ProjectChild = z.infer<typeof ProjectChildSchema>;
+
 export const ProjectSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -57,6 +72,12 @@ export const ProjectSchema = z.object({
   lastUpdated: z.string(),
   /** Raw Trello card description (Markdown), as the team writes it. */
   description: z.string().nullable(),
+  /** Which board this came from. */
+  source: ProjectSourceSchema,
+  /** For delivery cards named "Programme | Child", the parent programme name. */
+  programName: z.string().nullable(),
+  /** For programme cards, the delivery work rolled up beneath it. */
+  children: z.array(ProjectChildSchema),
   /** Human-readable recent activity lines. */
   recentActivity: z.array(
     z.object({ id: z.string(), text: z.string(), at: z.string() }),
@@ -74,4 +95,10 @@ export interface PortfolioSummary {
   notStarted: number;
   blocked: number;
   completedThisWeek: number;
+}
+
+/** Programme view: programme cards plus delivery work with no programme card. */
+export interface ProgramView {
+  programs: Project[];
+  unmapped: Project[];
 }

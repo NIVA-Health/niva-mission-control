@@ -18,7 +18,7 @@ async function json(url: string, init?: RequestInit) {
 
 /** Who is viewing, and may they curate the board for everyone? */
 export function useViewer() {
-  return useQuery<{ email: string | null; isAdmin: boolean }>({
+  return useQuery<{ email: string | null; isAdmin: boolean; defaultView: "delivery" | "programs" }>({
     queryKey: ["me"],
     queryFn: async () => json("/api/me"),
     staleTime: 5 * 60_000,

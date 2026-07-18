@@ -80,11 +80,13 @@ export function ProjectDetail({ project }: { project: Project }) {
           <Fact label="Progress">
             <div className="space-y-1.5">
               <span className="tabular-nums">{project.progress}%</span>
-              <ProgressBar value={project.progress} inferred={project.checklistTotal === 0} />
+              <ProgressBar value={project.progress} inferred={project.checklistTotal === 0 && project.children.length === 0} />
               <span className="block text-[11px] text-muted-foreground">
-                {project.checklistTotal > 0
-                  ? progressLabel(project.checklistDone, project.checklistTotal)
-                  : "Stage-based estimate (no checklist)"}
+                {project.children.length > 0
+                  ? progressLabel(project.checklistDone, project.checklistTotal, "projects complete")
+                  : project.checklistTotal > 0
+                    ? progressLabel(project.checklistDone, project.checklistTotal)
+                    : "Stage-based estimate (no checklist)"}
               </span>
             </div>
           </Fact>

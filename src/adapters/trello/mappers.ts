@@ -1,5 +1,6 @@
 import type {
   Owner,
+  ProjectSource,
   Project,
   ProjectPhase,
   ProjectPriority,
@@ -26,6 +27,9 @@ const PHASE_BY_LIST: Record<string, ProjectPhase> = {
   review: "Leadership Review",
   testing: "Validation",
   blocked: "Blocked",
+  "working on": "In Progress",
+  bugs: "In Progress",
+  "sprint backlog": "Ready",
   done: "Completed",
 };
 
@@ -33,17 +37,51 @@ function normalize(s: string): string {
   return s.trim().toLowerCase();
 }
 
+/**
+ * List names are decorated differently on each board — the delivery board uses
+ * "Done 🎉 - 2026" (word first) while the program board uses "📆 Sprint - Done
+ * [Version: 1.2.0]" (emoji first). Strip any leading non-alphanumeric characters
+ * so both normalize to something matchable. Without this every card on an
+ * emoji-prefixed board silently falls through to "Planned".
+ */
+function normalizeListName(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/^[^\p{L}\p{N}]+/u, "")
+    .trim();
+}
+
+/** Cards parked in a template/example list are scaffolding, not initiatives. */
+export function isTemplateList(listName: string | undefined): boolean {
+  if (!listName) return false;
+  const n = normalizeListName(listName);
+  return n.startsWith("template") || n.includes("templates");
+}
+
 export function mapPhase(listName: string | undefined): ProjectPhase {
   if (!listName) return "Planned";
-  const n = normalize(listName);
+  const n = normalizeListName(listName);
+
   // Exact match first (clean list names).
   if (PHASE_BY_LIST[n]) return PHASE_BY_LIST[n];
-  // Fuzzy fallback for decorated list names (e.g. "Done \u{1F389} - 2026", "Done \u{1F389} - 2025").
-  if (n.startsWith("done") || n.includes("complete")) return "Completed";
+
+  // Fuzzy fallback for decorated list names across both boards.
+  // \bdone\b (not startsWith) so "Sprint - Done [Version: 1.2.0]" matches while
+  // "To Do" and "Doing" correctly do not.
+  if (/\bdone\b/.test(n) || n.includes("complete") || n.includes("shipped")) return "Completed";
   if (n.startsWith("backlog")) return "Planned";
   if (n.startsWith("design")) return "In Design";
-  if (n.startsWith("to do") || n.startsWith("todo") || n.startsWith("ready")) return "Ready";
-  if (n.startsWith("doing") || n.includes("in progress") || n.includes("in-progress")) return "In Progress";
+  if (n.startsWith("sprint backlog") || n.startsWith("to do") || n.startsWith("todo") || n.startsWith("ready"))
+    return "Ready";
+  if (
+    n.startsWith("doing") ||
+    n.startsWith("working on") ||
+    n.startsWith("bugs") ||
+    n.includes("in progress") ||
+    n.includes("in-progress")
+  )
+    return "In Progress";
   if (n.startsWith("blocked")) return "Blocked";
   if (n.startsWith("review")) return "Leadership Review";
   if (n.startsWith("testing") || n.startsWith("validation") || n.startsWith("qa")) return "Validation";
@@ -167,13 +205,23 @@ function activityByCard(actions: TrelloAction[]): Map<string, Project["recentAct
 
 /* ---------------- Card -> Project ---------------- */
 
-export function bundleToProjects(bundle: TrelloBoardBundle): Project[] {
+/** Splits "Programme | Child" into its parent programme name, if present. */
+export function parseProgramName(cardName: string): string | null {
+  const idx = cardName.indexOf(" | ");
+  if (idx <= 0) return null;
+  const parent = cardName.slice(0, idx).trim();
+  return parent.length ? parent : null;
+}
+
+export function bundleToProjects(bundle: TrelloBoardBundle, source: ProjectSource): Project[] {
   const listById = new Map(bundle.lists.map((l) => [l.id, l.name]));
   const memberById = new Map(bundle.members.map((m) => [m.id, m]));
   const activity = activityByCard(bundle.actions);
 
   return bundle.cards
     .filter((c) => !c.closed)
+    // Template/example scaffolding is board furniture, not initiatives.
+    .filter((c) => !isTemplateList(listById.get(c.idList)))
     .map((card): Project => {
       const phase = mapPhase(listById.get(card.idList));
       const status = mapStatus(card.labels ?? [], phase);
@@ -198,6 +246,9 @@ export function bundleToProjects(bundle: TrelloBoardBundle): Project[] {
         targetCompletion: card.due,
         lastUpdated: card.dateLastActivity,
         description: card.desc && card.desc.trim() ? card.desc : null,
+        source,
+        programName: source === "delivery" ? parseProgramName(card.name) : null,
+        children: [],
         recentActivity: activity.get(card.id) ?? [],
       };
     });

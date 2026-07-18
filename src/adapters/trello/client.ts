@@ -4,21 +4,41 @@ import type { TrelloAction, TrelloCard, TrelloList, TrelloMember } from "./types
 interface TrelloCredentials {
   apiKey: string;
   token: string;
-  boardId: string;
+  /** High-level programme/initiative board (Scrum Master board). Optional. */
+  programBoardId: string | null;
+  /** Granular delivery boards (team sprint boards). At least one required. */
+  deliveryBoardIds: string[];
   revalidate: number;
 }
 
 export function readTrelloCredentials(): TrelloCredentials {
   const apiKey = process.env.TRELLO_API_KEY;
   const token = process.env.TRELLO_TOKEN;
-  const boardId = process.env.TRELLO_BOARD_ID;
-  if (!apiKey || !token || !boardId) {
+
+  // TRELLO_BOARD_ID remains supported as the single-board form we shipped first.
+  const deliveryRaw = process.env.TRELLO_DELIVERY_BOARD_IDS ?? process.env.TRELLO_BOARD_ID ?? "";
+  const deliveryBoardIds = deliveryRaw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const programBoardId = process.env.TRELLO_PROGRAM_BOARD_ID?.trim() || null;
+
+  if (!apiKey || !token || deliveryBoardIds.length === 0) {
     throw new Error(
-      "Trello is not configured. Set TRELLO_API_KEY, TRELLO_TOKEN and TRELLO_BOARD_ID in .env.local, or set DATA_SOURCE=mock to preview with sample data.",
+      "Trello is not configured. Set TRELLO_API_KEY, TRELLO_TOKEN and TRELLO_DELIVERY_BOARD_IDS " +
+        "(or TRELLO_BOARD_ID) in .env.local, or set DATA_SOURCE=mock to preview with sample data.",
     );
   }
+
   const revalidate = Number(process.env.DATA_REVALIDATE_SECONDS ?? "60");
-  return { apiKey, token, boardId, revalidate: Number.isFinite(revalidate) ? revalidate : 60 };
+  return {
+    apiKey,
+    token,
+    programBoardId,
+    deliveryBoardIds,
+    revalidate: Number.isFinite(revalidate) ? revalidate : 60,
+  };
 }
 
 const BASE = "https://api.trello.com/1";
@@ -43,23 +63,31 @@ async function get<T>(path: string, params: Record<string, string>, creds: Trell
 }
 
 export interface TrelloBoardBundle {
+  boardId: string;
   lists: TrelloList[];
   members: TrelloMember[];
   cards: TrelloCard[];
   actions: TrelloAction[];
 }
 
-/** Single logical read of everything Mission Control needs from a board. */
-export async function fetchBoardBundle(creds = readTrelloCredentials()): Promise<TrelloBoardBundle> {
+/** Everything Mission Control reads, across every configured board. */
+export interface TrelloWorkspaceBundle {
+  /** Programme board bundle, when TRELLO_PROGRAM_BOARD_ID is configured. */
+  program: TrelloBoardBundle | null;
+  /** One bundle per delivery board. */
+  delivery: TrelloBoardBundle[];
+}
+
+async function fetchBoardBundle(boardId: string, creds: TrelloCredentials): Promise<TrelloBoardBundle> {
   const [lists, members, cards, actions] = await Promise.all([
-    get<TrelloList[]>(`/boards/${creds.boardId}/lists`, { fields: "id,name", filter: "open" }, creds),
+    get<TrelloList[]>(`/boards/${boardId}/lists`, { fields: "id,name", filter: "open" }, creds),
     get<TrelloMember[]>(
-      `/boards/${creds.boardId}/members`,
+      `/boards/${boardId}/members`,
       { fields: "id,fullName,username,initials,avatarUrl" },
       creds,
     ),
     get<TrelloCard[]>(
-      `/boards/${creds.boardId}/cards`,
+      `/boards/${boardId}/cards`,
       {
         filter: "open",
         fields: "id,name,desc,idList,idMembers,labels,due,dateLastActivity,badges,closed",
@@ -70,11 +98,22 @@ export async function fetchBoardBundle(creds = readTrelloCredentials()): Promise
       creds,
     ),
     get<TrelloAction[]>(
-      `/boards/${creds.boardId}/actions`,
+      `/boards/${boardId}/actions`,
       { filter: "createCard,updateCard,commentCard,updateCheckItemStateOnCard", limit: "200" },
       creds,
     ).catch(() => [] as TrelloAction[]),
   ]);
 
-  return { lists, members, cards, actions };
+  return { boardId, lists, members, cards, actions };
+}
+
+/** Reads every configured board in parallel. */
+export async function fetchWorkspaceBundle(
+  creds = readTrelloCredentials(),
+): Promise<TrelloWorkspaceBundle> {
+  const [program, ...delivery] = await Promise.all([
+    creds.programBoardId ? fetchBoardBundle(creds.programBoardId, creds) : Promise.resolve(null),
+    ...creds.deliveryBoardIds.map((id) => fetchBoardBundle(id, creds)),
+  ]);
+  return { program, delivery };
 }

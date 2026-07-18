@@ -69,6 +69,6 @@ export function stripMarkdown(md: string): string {
 }
 
 /** Describes where a progress figure came from: measured tasks vs stage estimate. */
-export function progressLabel(checklistDone: number, checklistTotal: number): string {
-  return checklistTotal > 0 ? `${checklistDone}/${checklistTotal} tasks` : "stage-based";
+export function progressLabel(done: number, total: number, unit = "tasks"): string {
+  return total > 0 ? `${done}/${total} ${unit}` : "stage-based";
 }
