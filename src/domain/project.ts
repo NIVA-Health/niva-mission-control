@@ -18,6 +18,7 @@ export const PHASE = [
   "In Progress",
   "Leadership Review",
   "Validation",
+  "Blocked",
   "Completed",
 ] as const;
 

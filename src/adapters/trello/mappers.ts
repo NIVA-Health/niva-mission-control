@@ -25,6 +25,7 @@ const PHASE_BY_LIST: Record<string, ProjectPhase> = {
   doing: "In Progress",
   review: "Leadership Review",
   testing: "Validation",
+  blocked: "Blocked",
   done: "Completed",
 };
 
@@ -43,6 +44,7 @@ export function mapPhase(listName: string | undefined): ProjectPhase {
   if (n.startsWith("design")) return "In Design";
   if (n.startsWith("to do") || n.startsWith("todo") || n.startsWith("ready")) return "Ready";
   if (n.startsWith("doing") || n.includes("in progress") || n.includes("in-progress")) return "In Progress";
+  if (n.startsWith("blocked")) return "Blocked";
   if (n.startsWith("review")) return "Leadership Review";
   if (n.startsWith("testing") || n.startsWith("validation") || n.startsWith("qa")) return "Validation";
   return "Planned";
@@ -52,6 +54,8 @@ export function mapStatus(labels: TrelloLabel[], phase: ProjectPhase): ProjectSt
   const names = labels.map((l) => normalize(l.name));
   // Blocked always surfaces — even over list position.
   if (names.some((n) => n.includes("blocked"))) return "Blocked";
+  // A card parked in the "Blocked" list is blocked regardless of its labels.
+  if (phase === "Blocked") return "Blocked";
   // List position is authoritative for completion: a card in a "Done" list is
   // Completed even if it still carries a stale label. This keeps finished
   // work out of the active-project counts.
