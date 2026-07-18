@@ -25,8 +25,14 @@ export function computePortfolioSummary(projects: Project[], now = Date.now()): 
     onTrack: projects.filter((p) => isOnTrack(p, now)).length,
     notStarted: projects.filter((p) => p.status === "Not Started").length,
     blocked: projects.filter((p) => p.status === "Blocked").length,
+    // Counts cards that MOVED into a Done list this week — not cards merely
+    // touched this week. Backfilled historical cards have no completion event
+    // and are correctly excluded.
     completedThisWeek: projects.filter(
-      (p) => p.status === "Completed" && now - new Date(p.lastUpdated).getTime() <= ONE_WEEK_MS,
+      (p) =>
+        p.status === "Completed" &&
+        p.completedAt !== null &&
+        now - new Date(p.completedAt).getTime() <= ONE_WEEK_MS,
     ).length,
   };
 }

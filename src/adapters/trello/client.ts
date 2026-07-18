@@ -99,7 +99,13 @@ async function fetchBoardBundle(boardId: string, creds: TrelloCredentials): Prom
     ),
     get<TrelloAction[]>(
       `/boards/${boardId}/actions`,
-      { filter: "createCard,updateCard,commentCard,updateCheckItemStateOnCard", limit: "200" },
+      {
+        filter: "createCard,updateCard,commentCard,updateCheckItemStateOnCard",
+        // Windowed rather than a flat "last 200": we need every list-move in the
+        // last week to tell real completions from backfilled historical cards.
+        since: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+        limit: "1000",
+      },
       creds,
     ).catch(() => [] as TrelloAction[]),
   ]);

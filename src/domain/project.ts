@@ -70,6 +70,12 @@ export const ProjectSchema = z.object({
   /** ISO date strings (nullable when unset). */
   targetCompletion: z.string().nullable(),
   lastUpdated: z.string(),
+  /**
+   * When the card actually moved into a "Done" list. Null for cards that were
+   * created straight into Done (backfilled historical records), which is what
+   * keeps them out of "completed this week".
+   */
+  completedAt: z.string().nullable(),
   /** Raw Trello card description (Markdown), as the team writes it. */
   description: z.string().nullable(),
   /** Which board this came from. */

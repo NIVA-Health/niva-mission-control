@@ -226,6 +226,27 @@ function activityByCard(actions: TrelloAction[]): Map<string, Project["recentAct
   return map;
 }
 
+/**
+ * When did each card actually MOVE into a Done list?
+ *
+ * A card created directly in a Done list (a backfilled record of past work)
+ * never generates a move, so it has no completion date — which is exactly the
+ * behaviour we want: documenting old work should not read as shipping it today.
+ */
+function completionByCard(actions: TrelloAction[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const a of actions) {
+    if (a.type !== "updateCard") continue;
+    const cardId = a.data.card?.id;
+    const movedInto = a.data.listAfter?.name;
+    if (!cardId || !movedInto) continue;
+    if (mapPhase(movedInto) !== "Completed") continue;
+    const existing = map.get(cardId);
+    if (!existing || a.date > existing) map.set(cardId, a.date);
+  }
+  return map;
+}
+
 /* ---------------- Card -> Project ---------------- */
 
 /** Splits "Programme | Child" into its parent programme name, if present. */
@@ -240,6 +261,7 @@ export function bundleToProjects(bundle: TrelloBoardBundle, source: ProjectSourc
   const listById = new Map(bundle.lists.map((l) => [l.id, l.name]));
   const memberById = new Map(bundle.members.map((m) => [m.id, m]));
   const activity = activityByCard(bundle.actions);
+  const completions = completionByCard(bundle.actions);
 
   return bundle.cards
     .filter((c) => !c.closed)
@@ -269,6 +291,7 @@ export function bundleToProjects(bundle: TrelloBoardBundle, source: ProjectSourc
         owners,
         targetCompletion: card.due,
         lastUpdated: card.dateLastActivity,
+        completedAt: completions.get(card.id) ?? null,
         description: card.desc && card.desc.trim() ? card.desc : null,
         source,
         programName: source === "delivery" ? parseProgramName(card.name) : null,
