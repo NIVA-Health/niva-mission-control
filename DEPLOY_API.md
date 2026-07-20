@@ -4,12 +4,16 @@ This document describes a **separate** Cloud Run service for the versioned
 bearer-token API. It is documentation only — this stage does not deploy,
 create secrets, or change Google Cloud resources.
 
+Google Docs, Google Drive, and Cloud Scheduler are **not** part of this phase.
+They are planned downstream consumers of `GET /api/v1/weekly-report`, not
+implemented here.
+
 ## Relationship to the existing app
 
 | Service | Purpose | Auth |
 |---|---|---|
 | `niva-mission-control` | Existing Mission Control UI + internal APIs | **IAP-protected** (unchanged) |
-| `niva-mission-control-api` | Read-only `GET /api/v1/delivery` | Bearer token (`MISSION_CONTROL_API_TOKEN`) |
+| `niva-mission-control-api` | Read-only `GET /api/v1/delivery` and `GET /api/v1/weekly-report` | Bearer token (`MISSION_CONTROL_API_TOKEN`) |
 
 The existing **`niva-mission-control`** service remains IAP-protected. Do not
 weaken, replace, or bypass IAP on that service.
@@ -45,7 +49,9 @@ with sanitized `500`). Never commit or log the token.
 Map it into the API service as `MISSION_CONTROL_API_TOKEN` (for example
 `--set-secrets "MISSION_CONTROL_API_TOKEN=mission-control-api-token:latest"`).
 
-## Endpoint
+## Endpoints
+
+### Delivery portfolio (JSON)
 
 ```
 GET /api/v1/delivery
@@ -60,6 +66,75 @@ Authorization: Bearer <token>
 
 Credentials are accepted only via the `Authorization` header — never query
 parameters or cookies.
+
+### Weekly report (Markdown)
+
+```
+GET /api/v1/weekly-report
+Authorization: Bearer <token>
+```
+
+Optional deterministic timestamp (testing / operator verification):
+
+```
+GET /api/v1/weekly-report?asOf=2026-07-19T22:00:00-04:00
+Authorization: Bearer <token>
+```
+
+| Aspect | Behavior |
+|---|---|
+| Auth | Same bearer token as delivery (`MISSION_CONTROL_API_TOKEN`, min 32 UTF-8 bytes) |
+| Success | `200` with `Content-Type: text/markdown; charset=utf-8` |
+| Caching | `Cache-Control: no-store` |
+| Filename | `Content-Disposition: attachment; filename="niva-weekly-status-YYYY-MM-DD.md"` using the America/New_York calendar date of `asOf` (or now) |
+| Body | Same Markdown generator as the dashboard **Weekly report** button |
+| Week window | Monday 12:00:00 AM America/New_York through `asOf` |
+| `asOf` | Optional calendar-valid ISO-8601 datetime with explicit `Z` or numeric UTC offset (e.g. `2026-07-19T22:00:00Z`). Date-only, timezone-naive, and impossible calendar dates (e.g. `2026-02-30T12:00:00Z`) are rejected with `400`. Invalid values are not replaced with “now”. |
+| Errors | `401` unauthorized · `400` invalid `asOf` · `500` misconfigured token · `502` upstream failure (sanitized bodies) |
+
+API-only mode (`MISSION_CONTROL_API_ONLY=true`) allows **only**:
+
+- `/api/v1/delivery`
+- `/api/v1/weekly-report`
+
+All other paths return plain `404`.
+
+#### Example (PowerShell)
+
+```powershell
+$token = $env:MISSION_CONTROL_API_TOKEN
+Invoke-RestMethod `
+  -Uri "https://niva-mission-control-api.example.run.app/api/v1/weekly-report" `
+  -Headers @{ Authorization = "Bearer $token" } `
+  -OutFile "niva-weekly-status.md"
+```
+
+With a fixed `asOf`:
+
+```powershell
+Invoke-RestMethod `
+  -Uri "https://niva-mission-control-api.example.run.app/api/v1/weekly-report?asOf=2026-07-19T22:00:00-04:00" `
+  -Headers @{ Authorization = "Bearer $token" } `
+  -OutFile "niva-weekly-status.md"
+```
+
+#### Example (curl)
+
+```bash
+curl -fsS \
+  -H "Authorization: Bearer ${MISSION_CONTROL_API_TOKEN}" \
+  -o niva-weekly-status.md \
+  "https://niva-mission-control-api.example.run.app/api/v1/weekly-report"
+```
+
+With a fixed `asOf`:
+
+```bash
+curl -fsS \
+  -H "Authorization: Bearer ${MISSION_CONTROL_API_TOKEN}" \
+  -o niva-weekly-status.md \
+  "https://niva-mission-control-api.example.run.app/api/v1/weekly-report?asOf=2026-07-19T22:00:00-04:00"
+```
 
 ## Key rotation (high level)
 
@@ -80,6 +155,9 @@ affected by API-service rollback.
 
 - Deploying either service
 - Creating or rotating secrets in Google Cloud
+- Creating Google Docs or Google Drive files
+- Cloud Scheduler / Sunday automation wiring
 - MCP server or ChatGPT connector configuration
+- Chart generation
 - Rate limiting
 - Write / Trello-mutation APIs
