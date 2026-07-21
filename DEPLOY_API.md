@@ -51,12 +51,22 @@ connector layer. This API alone is not a ChatGPT connector.
 | Runtime service account | `niva-mission-control-api-run@niva-hr-database.iam.gserviceaccount.com` |
 | Application bearer-token secret | `mission-control-api-token` |
 | Reused Trello secret | `trello-token` |
-| Reviewed image digest (authoritative deploy input) | `us-central1-docker.pkg.dev/niva-hr-database/niva/niva-mission-control@sha256:2a046c787d49e777113bb01531f777ee8ec6fb2f71a34fed782ca658c33e086e` |
-| Human-readable provenance label (not a deploy input) | `us-central1-docker.pkg.dev/niva-hr-database/niva/niva-mission-control:159cbbd` (commit `159cbbd`) |
+| Historical / previously validated image digest (pre–weekly-report; **not** a weekly-report deploy input) | `us-central1-docker.pkg.dev/niva-hr-database/niva/niva-mission-control@sha256:2a046c787d49e777113bb01531f777ee8ec6fb2f71a34fed782ca658c33e086e` (source commit `159cbbd48b34f2f89586b2ad70cbd7da3efadd0b`) |
+| Historical provenance label only (not a deploy input) | `us-central1-docker.pkg.dev/niva-hr-database/niva/niva-mission-control:159cbbd` (commit `159cbbd`) |
+| Post-integration deploy image digest (required after separately authorized build; replace placeholder) | `us-central1-docker.pkg.dev/niva-hr-database/niva/niva-mission-control@sha256:<NEW_IMAGE_DIGEST>` |
+| Final approved source commit for that image (replace placeholder) | `<FINAL_APPROVED_COMMIT_SHA>` |
 
-Artifact Registry tags are **mutable**. Deployment by digest selects the reviewed
-bytes even if a tag is later moved. Do **not** call `:159cbbd` immutable. Do
-**not** use `:latest` as a deploy image input.
+Artifact Registry tags are **mutable**. Deployment must use an **immutable digest**
+of an image built from the final approved integrated commit. Do **not** call
+`:159cbbd` immutable. Do **not** use `:latest` as a deploy image input. Do **not**
+substitute the historical `159cbbd` digest for the post-integration image.
+
+**Local integration readiness vs deployment readiness:** the current local
+integration branch proves source readiness only. It does **not** prove image
+publication, image provenance for the integrated commit, Cloud Run deployment,
+weekly-report production availability, or successful production endpoint
+validation. No new image has yet been built, published, deployed, or approved
+in this local integration phase.
 
 ---
 
@@ -157,7 +167,7 @@ that secret exists.**
 | 3 | Generate and create `mission-control-api-token` securely |
 | 4 | Grant the runtime service account `secretAccessor` on `trello-token` and `mission-control-api-token` |
 | 5 | Confirm required non-secret Trello configuration (explanatory; §9 discovers) |
-| 6 | Discover dashboard config read-only, then deploy `niva-mission-control-api` by digest |
+| 6 | Discover dashboard config read-only, then deploy `niva-mission-control-api` by verified post-integration digest |
 | 7 | Grant `roles/run.invoker` to approved callers |
 | 8 | Acquire a correctly targeted identity token |
 | 9 | Run the validation matrix |
@@ -175,20 +185,53 @@ Confirm before any mutating command:
 - Project `niva-hr-database`, region `us-central1`.
 - Operator has permission to create the runtime SA, create the secret, grant
   secret IAM, deploy Cloud Run, and grant `roles/run.invoker` on the API only.
-- Reviewed image digest (authoritative):
+- Historical / previously validated image (source commit `159cbbd`; predates the
+  weekly-report route; **not** the weekly-report deploy image; **not** proof the
+  route exists; **not** an acceptable substitute for a post-integration build):
 
   ```text
   us-central1-docker.pkg.dev/niva-hr-database/niva/niva-mission-control@sha256:2a046c787d49e777113bb01531f777ee8ec6fb2f71a34fed782ca658c33e086e
   ```
 
-- Provenance label only (commit `159cbbd`; **not** a deploy `--image` input):
+- Historical provenance label only (commit `159cbbd`; **not** a deploy `--image`
+  input):
 
   ```text
   us-central1-docker.pkg.dev/niva-hr-database/niva/niva-mission-control:159cbbd
   ```
 
-- Do **not** rebuild the image.
+- **Post-integration image requirement:** after the integration branch or final
+  merge commit is approved, a separately authorized build/deployment phase must
+  build and publish a **new** immutable container image from that exact final
+  source commit. Do **not** deploy the historical `159cbbd` digest for a
+  weekly-report rollout. “Do not rebuild” applies only when redeploying an
+  already approved image whose verified source revision exactly matches the
+  intended release — it does **not** apply to this weekly-report integration,
+  because the historical image predates the feature.
+
+- Before any authorized weekly-report-capable deploy, record and verify (no
+  fictional values — replace placeholders only after a real authorized build):
+
+  | Record | Placeholder until a separately authorized build exists |
+  |---|---|
+  | Exact source commit SHA | `<FINAL_APPROVED_COMMIT_SHA>` |
+  | Build ID | `<NEW_BUILD_ID>` |
+  | Immutable image digest | `<NEW_IMAGE_DIGEST>` |
+  | Image repository | `us-central1-docker.pkg.dev/niva-hr-database/niva/niva-mission-control` |
+  | Source revision labels / annotations | must match `<FINAL_APPROVED_COMMIT_SHA>` |
+  | Build result | success, separately authorized |
+  | Deployment target (if later authorized) | `niva-mission-control-api` |
+
+  Deploy image input shape (digest only):
+
+  ```text
+  us-central1-docker.pkg.dev/niva-hr-database/niva/niva-mission-control@sha256:<NEW_IMAGE_DIGEST>
+  ```
+
 - Do **not** use `:latest` as the image input.
+- Do **not** substitute the historical digest
+  `sha256:2a046c787d49e777113bb01531f777ee8ec6fb2f71a34fed782ca658c33e086e` for
+  `<NEW_IMAGE_DIGEST>`.
 - Caller identities for step 7 are **explicitly approved** (not placeholders).
 - Dashboard non-secret Trello env values are discovered read-only inside the §9
   fresh-session deploy procedure (do not print secret values; do not paste
@@ -420,7 +463,7 @@ required.
 | Project | `niva-hr-database` |
 | Region | `us-central1` |
 | Runtime service account | `niva-mission-control-api-run@niva-hr-database.iam.gserviceaccount.com` |
-| Image | reviewed digest in §4 (authoritative); `:159cbbd` is provenance only |
+| Image | post-integration immutable digest from §4 (`@sha256:<NEW_IMAGE_DIGEST>`); historical `@sha256:2a046c…086e` / `:159cbbd` are **not** weekly-report deploy inputs |
 | `MISSION_CONTROL_API_ONLY` | `true` |
 | `MISSION_CONTROL_API_TOKEN` | secret `mission-control-api-token:latest` (see rotation notes) |
 | `TRELLO_TOKEN` | secret `trello-token:latest` |
@@ -444,6 +487,24 @@ Exactly **one** deploy procedure. Paste into a **fresh** Windows PowerShell
 session. It redefines every variable and helper it uses — do not rely on state
 from earlier steps. Do **not** paste `$Discovered*` or `TRELLO_API_KEY` values
 from §5 or anywhere else; this block discovers them itself.
+
+**Image provenance fail-closed checkpoint (required before deploy):** stop unless
+all of the following are true:
+
+1. A separately authorized build has already published a new immutable image from
+   the exact final approved integrated commit (`<FINAL_APPROVED_COMMIT_SHA>`).
+2. `$IMAGE` is that image’s digest form
+   (`…@sha256:<NEW_IMAGE_DIGEST>`), not a mutable tag.
+3. `$IMAGE` is **not** the historical `159cbbd` digest
+   `sha256:2a046c787d49e777113bb01531f777ee8ec6fb2f71a34fed782ca658c33e086e`.
+4. Verified image source labels / annotations match
+   `<FINAL_APPROVED_COMMIT_SHA>`.
+5. Image provenance can be verified (digest, repository, build ID
+   `<NEW_BUILD_ID>`, source revision).
+6. The image is known to contain `GET /api/v1/weekly-report` (the historical
+   `159cbbd` image does **not**).
+
+If any check fails, do **not** deploy.
 
 Before its first mutating command, the procedure runs one read-only
 `gcloud run services describe` against project `niva-hr-database`, region
@@ -479,7 +540,12 @@ $REGION      = "us-central1"
 $API_SERVICE = "niva-mission-control-api"
 $DASHBOARD_SERVICE = "niva-mission-control"
 $API_RUN_SA  = "niva-mission-control-api-run@$PROJECT_ID.iam.gserviceaccount.com"
-$IMAGE = "us-central1-docker.pkg.dev/niva-hr-database/niva/niva-mission-control@sha256:2a046c787d49e777113bb01531f777ee8ec6fb2f71a34fed782ca658c33e086e"
+# Replace <NEW_IMAGE_DIGEST> only after a separately authorized post-integration
+# build from <FINAL_APPROVED_COMMIT_SHA>. Never substitute the historical
+# 159cbbd digest sha256:2a046c787d49e777113bb01531f777ee8ec6fb2f71a34fed782ca658c33e086e.
+$IMAGE = "us-central1-docker.pkg.dev/niva-hr-database/niva/niva-mission-control@sha256:<NEW_IMAGE_DIGEST>"
+$HistoricalImageDigest = "sha256:2a046c787d49e777113bb01531f777ee8ec6fb2f71a34fed782ca658c33e086e"
+$FinalApprovedCommitSha = "<FINAL_APPROVED_COMMIT_SHA>"  # exact approved integrated commit
 
 # Temp env-vars file path (outside the repository; unique per run).
 $EnvVarsFile = Join-Path $env:TEMP ("niva-mc-api-env-" + [guid]::NewGuid().ToString("N") + ".yaml")
@@ -619,6 +685,19 @@ Assert-DeployVar -Name "API_SERVICE" -Value $API_SERVICE -Required
 Assert-DeployVar -Name "DASHBOARD_SERVICE" -Value $DASHBOARD_SERVICE -Required
 Assert-DeployVar -Name "API_RUN_SA" -Value $API_RUN_SA -Required
 Assert-DeployVar -Name "IMAGE" -Value $IMAGE -Required
+Assert-DeployVar -Name "FinalApprovedCommitSha" -Value $FinalApprovedCommitSha -Required
+if ($IMAGE -notlike "*@sha256:*") {
+  throw "IMAGE must be an immutable digest reference (@sha256:…). Stop."
+}
+if ($IMAGE -like "*<NEW_IMAGE_DIGEST>*" -or $FinalApprovedCommitSha -like "*<FINAL_APPROVED_COMMIT_SHA>*") {
+  throw "Post-integration image digest / final approved commit placeholders are still unset. Build and record a real image from the approved integrated commit before deploy. Stop."
+}
+if ($IMAGE -like "*$HistoricalImageDigest*") {
+  throw "Refusing historical 159cbbd image digest (predates weekly-report route). Deploy only a verified post-integration digest. Stop."
+}
+if ($FinalApprovedCommitSha -eq "159cbbd" -or $FinalApprovedCommitSha -eq "159cbbd48b34f2f89586b2ad70cbd7da3efadd0b") {
+  throw "Final approved commit must be the integrated weekly-report source, not historical 159cbbd. Stop."
+}
 
 # --- Read-only dashboard discovery (before any mutating command) ---
 # Capture JSON in memory; do not print it, the env map, TRELLO_API_KEY, or secret refs.
@@ -1030,8 +1109,24 @@ Do not invoke the service during documentation-only phases.
 
 ## 12. Step 9 — Validation matrix
 
-Do **not** invoke these endpoints during documentation-only phases. When a
-deployment phase is authorized, expect:
+Do **not** invoke these endpoints during documentation-only phases.
+
+Weekly-report endpoint validation (`GET /api/v1/weekly-report`) is valid **only
+after** all of the following have already occurred in separately authorized
+phases:
+
+1. A new immutable image was built from the exact final approved integrated
+   commit (`<FINAL_APPROVED_COMMIT_SHA>`).
+2. That image’s digest (`<NEW_IMAGE_DIGEST>`), repository, build ID, and source
+   labels were recorded and verified — and the digest is **not** the historical
+   `159cbbd` digest.
+3. Deployment of that verified digest to `niva-mission-control-api` was
+   separately authorized and completed.
+
+Source integration readiness alone does **not** authorize these probes.
+
+When a deployment phase is authorized and the sequencing above is satisfied,
+expect:
 
 | Case | Expected behavior |
 |---|---|
@@ -1222,6 +1317,12 @@ Therefore:
    (`gcloud run services update-traffic` on the API service only), or deploy a
    replacement API revision by digest. Use this for rollback to a known-good
    serving revision — not as a zero-traffic disable.
+
+   If the rollback target is the historical `159cbbd` image
+   (`…@sha256:2a046c787d49e777113bb01531f777ee8ec6fb2f71a34fed782ca658c33e086e`),
+   that revision **does not** include `GET /api/v1/weekly-report`. Rolling back
+   to it **removes** weekly-report functionality. Do **not** treat that
+   historical digest as a weekly-report-preserving rollback.
 4. **Fail-closed revision (separately authorized only)** — deploy a separately
    reviewed fail-closed API revision only when explicitly authorized. No
    command is provided here because no such reviewed artifact exists yet.
@@ -1255,8 +1356,19 @@ The IAP-protected dashboard remains independent throughout.
 - Trigger **`niva-mission-control-main`** (ID `9d485749-f306-4299-ba95-b61d2ebdc16c`)
   deploys the existing **`niva-mission-control`** dashboard from `cloudbuild.yaml`.
 - Do **not** repurpose that trigger for the API service.
-- Initial API deployment reuses the reviewed image **digest** (see §4); `:159cbbd`
-  is provenance for commit `159cbbd` only.
+- The historical image digest associated with commit `159cbbd`
+  (`…@sha256:2a046c787d49e777113bb01531f777ee8ec6fb2f71a34fed782ca658c33e086e`)
+  is a **previously validated / historical** artifact only. It predates the
+  weekly-report route and must **not** be reused as the weekly-report-capable
+  API deploy image. `:159cbbd` remains provenance for that historical commit
+  only.
+- For weekly-report rollout: after the final approved integrated commit exists,
+  a **separately authorized** build/publish phase must produce a new immutable
+  image from that exact commit, then record `<FINAL_APPROVED_COMMIT_SHA>`,
+  `<NEW_BUILD_ID>`, `<NEW_IMAGE_DIGEST>`, repository, source labels, and build
+  result before any API deploy uses that digest.
+- This local integration phase has **not** built, published, deployed, or
+  approved any such post-integration image.
 - A separate API build/deployment configuration may be designed later.
 - **No new Cloud Build trigger** is part of the initial private API deployment.
 
@@ -1416,5 +1528,8 @@ examples. Bearer-token-only invocation is **not** an approved transport path.
   existing build trigger
 
 The weekly-report **source** integration documents and implements the read-only
-Markdown export route only. It does not deploy production automation or configure
-downstream Docs / Drive / Scheduler consumers.
+Markdown export route only. It proves source readiness only. It does **not**
+deploy production automation, publish a post-integration image, establish image
+provenance for the integrated commit, deploy Cloud Run, prove weekly-report
+production availability, validate production endpoints, or configure downstream
+Docs / Drive / Scheduler consumers.
